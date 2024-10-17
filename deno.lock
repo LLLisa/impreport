@@ -1,11 +1,15 @@
 {
   "version": "4",
   "specifiers": {
+    "jsr:@nothing628/chalk@^1.0.1": "1.0.1",
     "jsr:@std/assert@1": "1.0.6",
     "jsr:@std/cli@^1.0.6": "1.0.6",
     "jsr:@std/internal@^1.0.4": "1.0.4"
   },
   "jsr": {
+    "@nothing628/chalk@1.0.1": {
+      "integrity": "d89ab2f1a9674ce7134b791ea8f53aec728d3e00ad89d08c44785bff342d2ef6"
+    },
     "@std/assert@1.0.6": {
       "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207",
       "dependencies": [
@@ -21,6 +25,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@nothing628/chalk@^1.0.1",
       "jsr:@std/assert@1",
       "jsr:@std/cli@^1.0.6"
     ]

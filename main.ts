@@ -2,6 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { parseArgs } from '@std/cli/parse-args';
 import { Args } from '@std/cli/parse-args';
 import path from 'node:path';
+import chalk from '@nothing628/chalk';
 
 type ImportMap = Map<string, number[]>;
 
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
                         const lines = contents.split('\n');
                         lines.forEach((line, index) => {
                             if (line.startsWith('import')) {
-                                const match = line.match(pathRegex)?.[0].replaceAll('"', '');
+                                const match = line.match(pathRegex)?.[0].replaceAll('"', '').replaceAll("'", "");
                                 if (!match) return;
                                 if (importPaths.has(match)) {
                                     importPaths.get(match)?.push(index);
@@ -50,7 +51,7 @@ async function main(): Promise<void> {
                         });
                         for (const [key, value] of importPaths.entries()) {
 							if (value.length > 1) {
-								console.log(`${file.name} has multiple imports of ${key} on lines (${value.join(', ')})`);
+								console.log(chalk.blue(`${file.name}`) +` has multiple imports of `+chalk.hex('fb002c')(`"${key}"`)+` on lines (${value.join(', ')})`);
 							}
                         }
                     }
