@@ -1,55 +1,64 @@
-import { readFile, readdir } from "node:fs/promises";
-import { parseArgs } from "@std/cli/parse-args";
-import { Args } from "@std/cli/parse-args";
-import path from "node:path";
+import { readFile, readdir } from 'node:fs/promises';
+import { parseArgs } from '@std/cli/parse-args';
+import { Args } from '@std/cli/parse-args';
+import path from 'node:path';
+
+type ImportMap = Map<string, number[]>;
 
 export function parseArguments(args: string[]): Args {
-  const strings = ["dir"];
-  const aliases = {"dir":"d"};
-  return parseArgs(args, { string: strings, alias: aliases });
+    const strings = ['dir'];
+    const aliases = { dir: 'd' };
+    return parseArgs(args, { string: strings, alias: aliases });
 }
 
 async function main(): Promise<void> {
-  const args = parseArguments(Deno.args);
-  if (!args) throw new Error("No args");
-  const { dir } = args;
-  const suffixes = ['js', 'jsx', 'ts', 'tsx'];
-  const pathRegex = /['"](.*?)['"]/g;
+    const args = parseArguments(Deno.args);
+    if (!args) throw new Error('No args');
+    const { dir } = args;
+    const suffixes = ['js', 'jsx', 'ts', 'tsx'];
+    const pathRegex = /['"](.*?)['"]/g;
+    const ignoreDirs = new Set<string>(['.git', 'node_modules']);
 
-  const files = await readdir(dir, { withFileTypes: true });
+    async function processDirectory(currentDir: string) {
+        const files = await readdir(currentDir, { withFileTypes: true });
 
-  for (const file of files) {
-    const fullPath = path.join(dir, file.name);
+        for (const file of files) {
+            const fullPath = path.join(currentDir, file.name);
 
-    if (file.isDirectory()) {
-      await main();
-    } else {
-      suffixes.forEach(async (suffix) => {
-        if (file.name.endsWith(suffix)) {
-          const importPaths = new Map<string, number[]>();
-          const contents = await readFile(fullPath, "utf-8");
-          const lines = contents.split("\n");
-          lines.forEach((line, index) => {
-            if (line.startsWith("import")) {
-              // console.log(`${file.name} line ${index}: ${line}`);
-              const matchArray = line.match(pathRegex);
-              if (!matchArray) return;
-              const match = matchArray[0].replaceAll('"', "");
-              console.log(match ? match : "no match");
-              if (match) {
-                const path = match[1];
-                if (importPaths.has(path)) {
-                  importPaths.get(path)?.push(index);
+            if (file.isDirectory()) {
+                if (!ignoreDirs.has(file.name)) {
+                    await processDirectory(fullPath);
                 } else {
-                  importPaths.set(path, [index]);
+                    console.log(`Skipping directory: ${file.name}`);
                 }
-              }
+            } else {
+                suffixes.forEach(async (suffix) => {
+                    if (file.name.endsWith(suffix)) {
+                        const importPaths: ImportMap = new Map();
+                        const contents = await readFile(fullPath, 'utf-8');
+                        const lines = contents.split('\n');
+                        lines.forEach((line, index) => {
+                            if (line.startsWith('import')) {
+                                const match = line.match(pathRegex)?.[0].replaceAll('"', '');
+                                if (!match) return;
+                                if (importPaths.has(match)) {
+                                    importPaths.get(match)?.push(index);
+                                } else {
+                                    importPaths.set(match, [index]);
+                                }
+                            }
+                        });
+                        for (const [key, value] of importPaths.entries()) {
+							if (value.length > 1) {
+								console.log(`${file.name} has multiple imports of ${key} on lines (${value.join(', ')})`);
+							}
+                        }
+                    }
+                });
             }
-          });
         }
-      });
     }
-  }
+    await processDirectory(dir);
 }
 
 main();
