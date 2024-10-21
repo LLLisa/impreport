@@ -1,3 +1,3 @@
 import { findDuplicateImps } from './findDuplicateImps.ts';
 
-findDuplicateImps();
+findDuplicateImps(Deno.args);

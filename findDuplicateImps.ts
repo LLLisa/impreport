@@ -13,7 +13,7 @@ export function parseArguments(args: string[]): Args {
     return parseArgs(args, { string: strings, boolean: booleans, alias: aliases });
 }
 
-export async function findDuplicateImps(args: string[] = Deno.args): Promise<void> {
+export async function findDuplicateImps(args: string[]): Promise<void> {
     const parsedArgs = parseArguments(args);
     if (!args) throw new Error('No args');
     const { dir, fix } = parsedArgs;
@@ -55,7 +55,9 @@ export async function findDuplicateImps(args: string[] = Deno.args): Promise<voi
 			const importPaths: ImportMap = new Map();
 			const contents = await readFile(filePath, 'utf-8');
 			const lines = contents.split('\n');
-			lines.forEach((line, index) => {
+			
+      // Find all import statements and their line numbers
+      lines.forEach((line, index) => {
 				if (line.startsWith('import')) {
 					const match = line.match(pathRegex)?.[0].replace(/['"]/g, '');
 					if (!match) return;

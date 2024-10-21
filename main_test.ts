@@ -1,6 +1,6 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects }  from "@std/assert";
+import { readFile } from 'node:fs/promises';
 import { parseArguments, findDuplicateImps } from "./findDuplicateImps.ts";
-import { fixImports, ImportMap } from "./fixImps.ts";
 import * as path from "node:path";
 
 // Test parseArguments function
@@ -48,25 +48,6 @@ Deno.test("findDuplicateImps with directory input", async () => {
   await Deno.remove(testDir, { recursive: true });
 });
 
-// Test fixImports function (from fixImps.ts)
-Deno.test("fixImports with multiple imports", async () => {
-  const testDir = await Deno.makeTempDir();
-  const testFile = path.join(testDir, "test.ts");
-  const content = 'import { a } from "mod";\nimport { b } from "mod";';
-  await Deno.writeTextFile(testFile, content);
-
-  const lines = content.split("\n");
-  const importPaths: ImportMap = new Map([["mod", [0, 1]]]);
-  
-  await fixImports(lines, importPaths, testFile);
-
-  const newContent = await Deno.readTextFile(testFile);
-  assertEquals(newContent.trim(), "import { a, b } from 'mod';");
-
-  // Clean up
-  await Deno.remove(testDir, { recursive: true });
-});
-
 // Test findDuplicateImps function with fix option
 Deno.test("findDuplicateImps with fix option", async () => {
   const testDir = await Deno.makeTempDir();
@@ -75,13 +56,19 @@ Deno.test("findDuplicateImps with fix option", async () => {
 
   await findDuplicateImps(["--dir", testDir, "--fix"]);
 
-  const newContent = await Deno.readTextFile(testFile);
-  assertEquals(newContent.trim(), "import { a, b } from 'mod';");
+  const newContent = await readFile(testFile, "utf-8" );
+  assertEquals(newContent, "import { a, b } from 'mod';");
 
   // Clean up
   await Deno.remove(testDir, { recursive: true });
 });
 
-// Deno.test("findDuplicateImps with invalid arguments", async () => {
-//   await assertThrows(() => findDuplicateImps([]), Error, "No directory specified");
-// });
+Deno.test("findDuplicateImps with invalid arguments", async () => {
+  await assertRejects(
+    async () => {
+      await findDuplicateImps([]);
+    },
+    Error,
+    "No directory specified"
+  );
+});
